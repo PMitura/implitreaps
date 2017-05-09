@@ -1,0 +1,281 @@
+\documentclass[a4paper, 12pt]{article}
+\usepackage[sc]{mathpazo}
+\usepackage[T1]{fontenc}	% Diacritic (output - selectable, hyphenation) 
+\usepackage[utf8]{inputenc}	% Diacritic (input - the text) 
+\usepackage[slovak]{babel}	% Typographical rules
+\usepackage{array}			% Layouting
+\usepackage{url}			% URL
+\usepackage{graphicx}		% Figures
+\usepackage{float}			% Figure positioning
+\usepackage{booktabs}		% Table appearance
+
+\usepackage[figurename=Obrázok]{caption}        % Margin styling
+\usepackage[top=70pt, bottom=70pt, left=70pt, right=70pt]{geometry}
+\usepackage[usenames, dvipsnames]{color} 
+\usepackage{adjustbox}
+\usepackage[binary-units=true]{siunitx}
+\usepackage{enumitem}
+\usepackage{pgfplots}
+\usepackage[hidelinks]{hyperref}
+
+\usepackage{amsthm}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{enumerate}
+\usepackage{thmtools}
+
+\theoremstyle{definition}
+\newtheorem*{otazka}{Otázka}
+\newtheorem{definicia}{Definícia}
+\newtheorem{lemma}{Lemma}
+\newtheorem{dosl}{Dôsledok}
+\newtheorem{priklad}{Príklad}
+\newtheorem{veta}{Veta}
+
+\declaretheoremstyle[
+    spaceabove=6pt,
+    spacebelow=6pt,
+    headfont=\normalfont\itshape,
+    qed=\qedsymbol,
+    headpunct=.
+]{proofstyle}
+\declaretheorem[style=proofstyle,unnumbered, name=Dôkaz]{dokaz}
+
+\pgfplotsset{compat=1.13}
+
+% remove chapter headers
+\usepackage{titlesec}
+\titleformat{\chapter}{\normalfont\bfseries}{}{0pt}{\Huge}
+
+% Morass' listing setup
+\definecolor{myBlue}{RGB}{0,0,255}
+\definecolor{alBlue}{RGB}{0,170,0}
+\definecolor{myBrown}{RGB}{180,120,0}
+\definecolor{myGreen}{RGB}{0,99,0}
+\definecolor{myAzure}{RGB}{180,20,180}
+\usepackage[formats]{listings}
+\usepackage{listings}
+\lstset{
+    literate={~} {$\sim$}{1},
+    language=C++,
+    keywordstyle=\color{myBlue},
+    commentstyle=\color{Gray},
+    stringstyle=\color{myBrown},
+    numberstyle=\ttfamily\color{Gray},
+    emph={include,define},
+    emphstyle={\color{myGreen}},
+    keywordstyle=[2]\color{myAzure},
+    keywords=[2]{string},
+    basicstyle=\footnotesize\ttfamily,
+    frame=bt,
+    numbers=left,
+    stepnumber=1,
+    breaklines=true,
+    emph=[2]{string,ll,ii,vi,vii,set,priority_queue,M_PI},
+    emphstyle=[2]{\color{myAzure}},
+    emph=[3]{F,PB,FF,FOR,aa,bb,CL,D},
+    emphstyle=[3]{\bfseries\color{alBlue}},
+    breakatwhitespace=true,
+    belowskip=1.5em,
+    aboveskip=1.5em,
+    columns=fullflexible,
+    stepnumber=1,
+    keepspaces=true
+}
+
+% define "struts", as suggested by Claudio Beccari in
+%    a piece in TeX and TUG News, Vol. 2, 1993.
+\newcommand\Tstrut{\rule{0pt}{2.6ex}}         % = `top' strut
+\newcommand\Bstrut{\rule[-0.9ex]{0pt}{0pt}}   % = `bottom' strut
+
+\begin{document}
+
+\title{\textsc{\large{Semestrálny projekt MI-PAL, LS 2016/17}}\\
+\vspace{1cm}
+\large{Implementácia dátovej štruktúry}\\
+\Huge{Implicit Treap}\\
+\vspace{1cm}
+\normalsize{Peter Mitura (\texttt{miturpet@fit.cvut.cz})}}
+\date{}
+
+\maketitle
+
+\section{Treap}
+
+Treap (názov zložený zo slov \emph{tree} a \emph{heap}) je stromová dátová štruktúra,
+ktorá je kombináciou binárneho vyhľadávacieho stromu (ďalej \emph{BVS}) a haldy.
+Základy tejto štruktúry vychádzajú z \emph{kartézskych stromov}
+\cite{cartesian} -- binárnych stromov postavených nad poľom, ktoré spĺňajú
+haldovú podmienku a sú usporiadané tak, že ich in-order priechod vypíše
+originálne pole.
+
+Treapy sú rozšírením tejto myšlienky. Tiež sú to binárne stromy, v každom
+svojom vrchole ale ukladajú dve hodnoty: \emph{kľúč} a \emph{prioritu}, pri čom
+simultánne sa udržujú zoradené ako BVS podľa kľúča a ako minimová halda podľa
+priority.  Nakoľko sa najčastejšie používajú ako implementácia abstraktného
+dátového typu \emph{množina} (tzn. efektívna implementácia funkcií
+\emph{Insert}, \emph{Find} a \emph{Delete}), kľúče vrcholov je logické využiť
+na uloženie prvkov v množine. Priority potom slúžia jedine k vyvažovaniu
+stromu, pri čom ďalej ukážeme, že ak ich budeme voliť náhodne z rovnomerného
+rozloženia nad dostatočne veľkým rozsahom, strom získa z hľadiska efektivity
+operácií nad kľúčmi zaujímavé vlastnosti.
+
+Treap v tejto podobe bol po prvý krát popísaný Aragonom a Seidlom v roku 1989
+\cite{treaps}, s určitými rozdielmi v názvosloví.
+\footnote{Aragon a Seidel
+pri pojme \emph{Treap} nešpecifikovali spôsob voľby priority, náhodnú hodnotu
+jej dávali až v štruktúre ktorú pomenovali \emph{Randomized Search Tree} --
+tento pojem sa ale neskôr začal využívať pre zložitejšiu dátovú štruktúru a
+označenie Treap sa zaužíval pre verziu s náhodnou voľbou priority.}
+Základné operácie, podporované touto štruktúrou zodpovedajú, ako už bolo
+zmienené, abstraktnému dátovému typu množina:
+
+\begin{itemize}
+    \item $Insert(x)$ -- vloží prvok $x$ do stromu
+    \item $Find(x)$ -- zistí, či sa prvok $x$ nachádza v strome
+    \item $Delete(x)$ -- zmaže prvok $x$ zo stromu
+\end{itemize}
+
+Podobne ako u iných BVS, aj tu od univerza vkladaných prvkov požadujeme, aby
+tvorilo úplne usporiadanú množinu a reláciu usporiadania je nutné definovať pri
+inicializácií štruktúry (štandardne v implementácií využívame funkciu
+\texttt{std::less}, ak je dostupná). Základnou myšlienkou potom je, že všetky
+operácie implementujeme analogicky ako v bežnom BVS, s jediným rozdielom
+že v nich chceme zachovať haldové usporiadanie podľa priority bez zvýšenia
+asymptotickej časovej zložitosti.
+
+Ak by sa nám to podarilo (konkrétnu implementáciu popíšeme nižšie), zložitosť
+operácií nad stromom $T$ by dosiahla $\mathcal{O}(h(T))$, kde $h(T)$ je hĺbka
+daného stromu. Tá by v nevyvažovanom BVS mohla dosiahnúť až
+$\mathcal{O}(n)$,
+kde $n$ je počet prvkov v strome, čo pre nás rozhodne nie je priaznivé. Kľúčové
+pre celú štruktúru je teda nasledujúce tvrdenie:
+
+\begin{veta}
+    Ak je priorita každého vrchola nezávislá, rovnomerne rozložená spojitá
+    náhodná veličina, stredná hodnota hĺbky \emph{ľubovoľného} vrchola v strome
+    je $\mathcal{O}(\log n)$, kde $n$ je počet vrcholov v strome.
+\end{veta}
+
+Pri dôkaze tejto vety sa inšpirujeme postupom z kurzu na Univerzite v Illinois
+\cite{erickson},
+ktorý je do istej miery prehľadnejší než dôkaz v originálnom článku. 
+
+Počet vrcholov v strome budeme naďalej označovať ako $n$. Ďalej si označme
+vrchol s $k$-tým najmenším kľúčom ako $x_k$ a počet vrcholov. Zároveň si
+zavedieme sadu premenných $A^i_k$, ktorá bude indikovať či je vrchol $x_i$
+predkom vrchola $x_k$ (predka zavádzame tak, že vrchol nie je predkom sám
+sebe):
+
+$$
+A_k^i = 
+\begin{cases}
+    \text{$1$\qquad ak je $x_i$ predkom $x_k$} \\
+    \text{$0$\qquad inak}
+\end{cases}
+$$
+
+Pomocou indikátora $A$ dokážeme jednoducho vyjadriť hĺbku vrchola $h(x_k)$:
+
+\begin{equation}
+h(x_k) = \sum_{i=1}^n A^i_k
+\end{equation}
+
+Takže strednú hodnotu hĺbky vrchola môžeme označiť ako
+
+\begin{equation}
+\label{etop}
+\mathbb{E}(d(x_k)) = \sum_{i=1}^n P(A^i_k = 1)
+\end{equation}
+
+Veta 1 o tejto hodnote tvrdí, že je rovná $\mathcal{O}(\log n)$. Pre overenie
+tejto rovnosti si zavedieme ešte jedno značenie, $X(i, k)$ bude označovať
+množinu vrcholov $\{x_i, x_{i+1}, \ldots, x_k\}$ alebo $\{x_k, x_{k-1}, \ldots,
+x_i\}$ podľa toho či $i < k$ alebo $i > k$.
+
+\begin{lemma}
+    Pre každé $i \neq k$ platí, že $x_i$ je predkom $x_k$ vtedy a len vtedy,
+    keď má $x_i$ najnižšiu prioritu spomedzi vrcholov v $X(i, k)$.
+\end{lemma}
+
+\begin{dokaz}
+    V prípadoch kedy je $x_i$ alebo $x_k$ koreňom stromu je rovno vidieť, že
+    lemma platí ($x_i$ resp. $x_k$ má vtedy najnižšiu prioritu z celého
+    stromu), obmedzíme sa teda na prípad kedy je koreňom $x_j$ pre nejaké $i
+    \neq j \neq k$. Potom môžeme rozlíšiť dve možnosti: $x_i$ a $x_k$ sú buď
+    v rovnakom alebo rozdielnom podstrome $x_j$.
+
+    Ak sú v rôznom podstrome, tak $x_j$ určite patrí do $X(i, k)$ (jedná sa o
+    BVS, takže jedna hodnota z dvojice $i$, $k$ musí byť menšia než $j$, a
+    jedna väčšia než $j$). Priorita $x_j$ je ale najnižšia z celého stromu,
+    takže aj z $X(i, k)$, čo by podľa lemmy malo znamenať že $x_i$ nie je
+    predkom $x_k$ (a nakoľko sú v rôznych podstromoch, je to aj pravda).
+
+    Pre $x_i$ a $x_k$ v jednom podstrome môžeme uvažovať len daný podstrom a
+    v ňom postupovať analogicky ako v prípadoch vyššie (rekurzívne).
+\end{dokaz}
+
+Pravdepodobnosť že vrchol $x_i$ je predkom $x_k$ je teda rovnaká, ako
+pravdepodobnosť že $x_i$ má minimálnu prioritu z $X(i, k)$ a nakoľko je táto
+šanca pre všetky vrcholy z daného rozsahu rovnaká, môžeme ju jednoducho
+vyjadriť ako:
+
+$$
+P(A^i_k = 1) = 
+\left\{\begin{array}{lr}
+    \vspace{1ex}
+    \dfrac{1}{k-i+1} & \text{ak $i < k$} \\
+    \vspace{1ex}
+    \dfrac{1}{i-k+1} & \text{ak $i > k$} \\
+    0 & \text{ak $i = k$}
+\end{array}
+$$
+
+Zostáva už len vyjadriť hodnotu strednej hodnoty $\mathbb{E}(h(x_k))$. Z
+\ref{etop} máme jej vzťah k $P(A^i_k)$, ich sumu môžeme rozdeliť na 2 časti
+podľa vzťahu medzi $i$ a $k$:
+
+\begin{equation}
+    \sum_{i=1}^n P(A^i_k = 1) = \sum_{i=1}^{k-1} \frac{1}{k-i+1} +
+    \sum_{i=k+1}^{n} \frac{1}{i-k+1}
+\end{equation}
+
+\begin{center}
+\emph{(prvá suma je prípad s $i < k$, druhá $i > k$)}
+\end{center}
+
+Tieto sumy ďalej môžeme previesť na harmonické rady, pre ktoré máme známe
+odhady:
+
+\begin{equation}
+    \sum_{i=1}^{k-1} \frac{1}{k-i+1} + \sum_{i=k+1}^{n} \frac{1}{i-k+1}
+    = \sum_{j=2}^{k} \frac{1}{j} + \sum_{j=2}^{n-k} \frac{1}{j}
+    = H_k - 1 + H_{n-k} - 1
+\end{equation}
+\begin{equation}
+    H_k - 1 + H_{n-k} - 1 < \ln k + \ln(n-k) - 2 < 2 \ln n - 2
+\end{equation}
+čo asymptoticky dáva
+\begin{equation}
+    \mathbb{E}(d(x_k)) < 2 \ln n - 2 = \mathcal{O}(\log n)
+\end{equation}
+čím je veta 1 dokázaná.
+
+\subsection{Implementácia operácií}
+
+
+\begin{thebibliography}{9}
+\bibitem{cartesian}
+    J. Vuillemin, \uv{A unifying look at data structures}, Communications of the ACM,
+        vol. 23, no. 4. Association for Computing Machinery (ACM), pp. 229–239,
+        1. apríla 1980.
+\bibitem{treaps} 
+    C. R. Aragon a R. G. Seidel, \uv{Randomized search trees}, 30th Annual
+        Symposium on Foundations of Computer Science. IEEE, 1989.
+\bibitem{erickson}
+    J. Erickson, \uv{Randomized Binary Search Trees}, 2013. [Online]. Dostupné
+        z:
+        \url{http://jeffe.cs.illinois.edu/teaching/algorithms/notes/10-treaps.pdf}.
+        [prístup 9. mája 2017].
+\end{thebibliography}
+\end{document}
