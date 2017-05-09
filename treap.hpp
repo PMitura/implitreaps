@@ -96,7 +96,7 @@ class ImplicitTreap {
         }
 
         bool erase(T x) {
-            if (find(x))
+            if (!find(x))
                 return 0;
             eraseRec(x, tree);
             return 1;

@@ -40,5 +40,7 @@ int main() {
     assert(sit.insert(4));
     assert(!sit.insert(4));
     assert(sit.erase(4));
+    assert(!sit.erase(4));
     assert(!sit.find(4));
+    cout << ">> OK" << endl;
 }
