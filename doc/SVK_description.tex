@@ -90,23 +90,22 @@
 
 \begin{document}
 
-\title{\textsc{\large{Semestrálny projekt MI-PAL, LS 2016/17}}\\
+\title{\textsc{\large{Semestrálny projekt z MI-PAL, LS 2016/17}}\\
 \vspace{1cm}
 \large{Implementácia dátovej štruktúry}\\
 \Huge{Implicit Treap}\\
 \vspace{1cm}
 \normalsize{Peter Mitura (\texttt{miturpet@fit.cvut.cz})}}
-\date{}
 
 \maketitle
 
 \section{Treap}
 
-Treap (názov zložený zo slov \emph{tree} a \emph{heap}) je stromová dátová štruktúra,
-ktorá je kombináciou binárneho vyhľadávacieho stromu (ďalej \emph{BVS}) a haldy.
-Základy tejto štruktúry vychádzajú z \emph{kartézskych stromov}
-\cite{cartesian} -- binárnych stromov postavených nad poľom, ktoré spĺňajú
-haldovú podmienku a sú usporiadané tak, že ich in-order priechod vypíše
+Treap (názov zložený zo slov \emph{tree} a \emph{heap}) je stromová dátová
+štruktúra, ktorá je kombináciou binárneho vyhľadávacieho stromu (ďalej
+\emph{BVS}) a haldy.  Základy tejto štruktúry vychádzajú z \emph{kartézskych
+stromov} \cite{cartesian} -- binárnych stromov postavených nad poľom, ktoré
+spĺňajú haldovú podmienku a sú usporiadané tak, že ich in-order priechod vypíše
 originálne pole.
 
 Treapy sú rozšírením tejto myšlienky. Tiež sú to binárne stromy, v každom
@@ -153,8 +152,8 @@ pre celú štruktúru je teda nasledujúce tvrdenie:
 
 \begin{veta}
     Ak je priorita každého vrchola nezávislá, rovnomerne rozložená spojitá
-    náhodná veličina, stredná hodnota hĺbky \emph{ľubovoľného} vrchola v strome
-    je $\mathcal{O}(\log n)$, kde $n$ je počet vrcholov v strome.
+    náhodná veličina, stredná hodnota hĺbky \emph{ľubovoľného} vrchola v Treape
+    je $\mathcal{O}(\log n)$, kde $n$ je počet vrcholov v Treape.
 \end{veta}
 
 Pri dôkaze tejto vety sa inšpirujeme postupom z kurzu na Univerzite v Illinois
@@ -181,11 +180,12 @@ Pomocou indikátora $A$ dokážeme jednoducho vyjadriť hĺbku vrchola $h(x_k)$:
 h(x_k) = \sum_{i=1}^n A^i_k
 \end{equation}
 
-Takže strednú hodnotu hĺbky vrchola môžeme označiť ako
+Takže stredná hodnotu hĺbky vrchola $x_k$ bude rovná sume pravdepodobností, že
+$x_i$ je predkom $x_k$ nad všetkými $x_i$.
 
 \begin{equation}
 \label{etop}
-\mathbb{E}(d(x_k)) = \sum_{i=1}^n P(A^i_k = 1)
+\mathbb{E}(h(x_k)) = \sum_{i=1}^n P(A^i_k = 1)
 \end{equation}
 
 Veta 1 o tejto hodnote tvrdí, že je rovná $\mathcal{O}(\log n)$. Pre overenie
@@ -215,10 +215,10 @@ x_i\}$ podľa toho či $i < k$ alebo $i > k$.
     v ňom postupovať analogicky ako v prípadoch vyššie (rekurzívne).
 \end{dokaz}
 
-Pravdepodobnosť že vrchol $x_i$ je predkom $x_k$ je teda rovnaká, ako
-pravdepodobnosť že $x_i$ má minimálnu prioritu z $X(i, k)$ a nakoľko je táto
+Pravdepodobnosť že vrchol $x_i$ je predkom $x_k$ je teda zhodná s
+pravdepodobnosťou že $x_i$ má minimálnu prioritu z $X(i, k)$ a nakoľko je táto
 šanca pre všetky vrcholy z daného rozsahu rovnaká, môžeme ju jednoducho
-vyjadriť ako:
+vyjadriť ako $ 1 / $počet vrcholov v rozsahu:
 
 $$
 P(A^i_k = 1) = 
@@ -257,18 +257,72 @@ odhady:
 \end{equation}
 čo asymptoticky dáva
 \begin{equation}
-    \mathbb{E}(d(x_k)) < 2 \ln n - 2 = \mathcal{O}(\log n)
+    \mathbb{E}(h(x_k)) < 2 \ln n - 2 = \mathcal{O}(\log n)
 \end{equation}
 čím je veta 1 dokázaná.
 
 \subsection{Implementácia operácií}
 
+Ako sme už uviedli vyššie, vďaka predpokladu logaritmickej hĺbky stromu v
+priemernom prípade nám stačí implementovať operácie $Insert$, $Delete$ a $Find$
+v zložitosti zodpovedajúcej hĺbke stromu. 
+
+Pre zjednodušenie ich implementácie (ktorá by inak musela byť riešená
+komplikovanými rotáciami) sa bežne zavádza dvojica primitívnych operácií
+$Split$ a $Merge$:
+
+\begin{itemize}
+    \item $Split(x, t)$ -- rozdelí Treap s koreňom vo vrchole $t$ na dva
+        Treapy: ľavý Treap $l$, v ktorom sú kľúče všetkých vrcholov menšie
+        rovné hodnote $x$ a pravý Treap $r$, v ktorom sú kľúče všetkých
+        vrcholov väčšie než $x$.  Originálny Treap $ŧ$ v tomto procese zanikne.
+    \item $Merge(l, r)$ -- spojí dva Treapy do jedného, pod podmienkou že
+        maximálny kľúč z $l$ je menší ako minimálny kľúč z $r$.
+\end{itemize}
+
+\subsubsection{Realizácia operácie $Split$}
+
+Pre potreby práce so stromom označíme ľavého syna vrchola $v$ ako $v.left$ a
+pravého ako $v.right$. Operácia $Split(x, t)$ môže potom naraziť na 3 prípady:
+\begin{itemize}
+    \item Ak je $x$ menšie ako kľúč v $t$, tak ako $r$ vrátime vrchol $t$ s
+        jeho pôvodným pravým podstromom, a ako ľavý podstrom mu priradíme pravý
+        strom z výsledku operácie $Split(x, t.left)$. Takto zvolené $r$ bude
+        určite spĺňať haldovú podmienku (pôvodný strom bol Treap, takže všetky
+        prvky z ľavého podstromu $t$ musia mať väčšiu prioritu ako $r$) a
+        zároveň sú všetky kľúče v ňom väčšie ako $x$ (pre vrchol $t$ a jeho
+        pravý podstrom to platí nakoľko sa jedná o BVS, pre pravý strom zo
+        splitu ľavého podstromu $t$ to platí z definície operácie $Split$).
+
+        Ako Treap $l$ ďalej vrátime ľavý strom získaný
+        operáciou $Split(x, t.left)$ (ktorú sme už zavolali pre zísakanie
+        Treapu $r$). Z definície $Split$-u sa musí jednať o Treap so všetkými
+        kľúčmi menšími než $x$, takže spĺňa všetky podmienky.
+
+    \item Ak je $x$ väčšie alebo rovné kľúču v $t$, potom vykonáme reverznú
+        verziu minulého prípadu -- ako Treap $l$ vrátime vrchol $t$ s jeho
+        originálnym ľavým podstromom a jeho pravý podstrom nahradíme ľavým
+        Treapom z operácie $Split(x, t.right)$. Ako pravý Treap vrátime pravý
+        strom získaný tou istou funkciou.
+
+    \item Ak je $t$ prázdny Treap (napr. v situácií kedy sa zanoríme do
+        neexistujúceho syna), vrátime ako $l$ aj $r$ prázdny Treap.
+\end{itemize}
+
+Je zjavné, že operácia $Split$ sa v každej instancií môže rekurzívne zanoriť
+maximálne jeden krát do vrcholu o jednu úroveň nižšie. Jej časová zložitosť v
+najhoršom prípade je teda lineárna v hĺbke stromu, čo v priemere podľa vety 1
+dáva asymptoticky $O(\log n)$.
+
+\subsubsection{Realizácia operácie $Merge$}
+
+
 
 \begin{thebibliography}{9}
 \bibitem{cartesian}
-    J. Vuillemin, \uv{A unifying look at data structures}, Communications of the ACM,
-        vol. 23, no. 4. Association for Computing Machinery (ACM), pp. 229–239,
-        1. apríla 1980.
+    J. Vuillemin, \uv{A unifying look at data structures}, Communications of
+        the ACM, vol. 23, no. 4. Association for Computing Machinery (ACM), pp.
+        229–239, 1. apríla 1980.
 \bibitem{treaps} 
     C. R. Aragon a R. G. Seidel, \uv{Randomized search trees}, 30th Annual
         Symposium on Foundations of Computer Science. IEEE, 1989.
