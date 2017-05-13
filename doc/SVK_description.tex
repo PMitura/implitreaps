@@ -112,12 +112,11 @@ Treapy sú rozšírením tejto myšlienky. Tiež sú to binárne stromy, v každ
 svojom vrchole ale ukladajú dve hodnoty: \emph{kľúč} a \emph{prioritu}, pri čom
 simultánne sa udržujú zoradené ako BVS podľa kľúča a ako minimová halda podľa
 priority.  Nakoľko sa najčastejšie používajú ako implementácia abstraktného
-dátového typu \emph{množina} (tzn. efektívna implementácia funkcií
-\emph{Insert}, \emph{Find} a \emph{Delete}), kľúče vrcholov je logické využiť
-na uloženie prvkov v množine. Priority potom slúžia jedine k vyvažovaniu
-stromu, pri čom ďalej ukážeme, že ak ich budeme voliť náhodne z rovnomerného
-rozloženia nad dostatočne veľkým rozsahom, strom získa z hľadiska efektivity
-operácií nad kľúčmi zaujímavé vlastnosti.
+dátového typu \emph{množina} , kľúče vrcholov je logické využiť na uloženie
+prvkov v množine. Priority potom slúžia jedine k vyvažovaniu stromu, pri čom
+ďalej ukážeme, že ak ich budeme voliť náhodne zo spojitého rovnomerného
+rozloženia, strom získa z hľadiska efektivity operácií nad kľúčmi zaujímavé
+vlastnosti.
 
 Treap v tejto podobe bol po prvý krát popísaný Aragonom a Seidlom v roku 1989
 \cite{treaps}, s určitými rozdielmi v názvosloví
@@ -130,9 +129,9 @@ Základné operácie, podporované touto štruktúrou zodpovedajú, ako už bolo
 zmienené, abstraktnému dátovému typu množina:
 
 \begin{itemize}
-    \item $Insert(x)$ -- vloží prvok $x$ do stromu
+    \item $Insert(x)$ -- vloží prvok $x$ do stromu, ak sa tam ešte nenachádza
     \item $Find(x)$ -- zistí, či sa prvok $x$ nachádza v strome
-    \item $Delete(x)$ -- zmaže prvok $x$ zo stromu
+    \item $Delete(x)$ -- zmaže prvok $x$ zo stromu, ak sa v ňom nachádza
 \end{itemize}
 
 Podobne ako u iných BVS, aj tu od univerza vkladaných prvkov požadujeme, aby
@@ -160,8 +159,8 @@ Pri dôkaze tejto vety sa inšpirujeme postupom z kurzu na Univerzite v Illinois
 \cite{erickson},
 ktorý je do istej miery prehľadnejší než dôkaz v originálnom článku. 
 
-Počet vrcholov v strome budeme naďalej označovať ako $n$. Ďalej si označme
-vrchol s $k$-tým najmenším kľúčom ako $x_k$ a počet vrcholov. Zároveň si
+Počet vrcholov v strome budeme naďalej označovať ako $n$ a ďalej si označme
+vrchol s $k$-tým najmenším kľúčom ako $x_k$. Zároveň si
 zavedieme sadu premenných $A^i_k$, ktorá bude indikovať či je vrchol $x_i$
 predkom vrchola $x_k$ (predka zavádzame tak, že vrchol nie je predkom sám
 sebe):
@@ -180,8 +179,9 @@ Pomocou indikátora $A$ dokážeme jednoducho vyjadriť hĺbku vrchola $h(x_k)$:
 h(x_k) = \sum_{i=1}^n A^i_k
 \end{equation}
 
-Takže stredná hodnotu hĺbky vrchola $x_k$ bude rovná sume pravdepodobností, že
-$x_i$ je predkom $x_k$ nad všetkými $x_i$.
+Takže stredná hodnotu hĺbky vrchola $x_k$ bude rovná sume pravdepodobností nad
+$i \in {1, \ldots, n}$ že
+$x_i$ je predkom $x_k$.
 
 \begin{equation}
 \label{etop}
@@ -232,7 +232,7 @@ P(A^i_k = 1) =
 $$
 
 Zostáva už len vyjadriť hodnotu strednej hodnoty $\mathbb{E}(h(x_k))$. Z
-\ref{etop} máme jej vzťah k $P(A^i_k)$, ich sumu môžeme rozdeliť na 2 časti
+(\ref{etop}) máme jej vzťah k $P(A^i_k = 1)$, ich sumu môžeme rozdeliť na 2 časti
 podľa vzťahu medzi $i$ a $k$:
 
 \begin{equation}
@@ -339,7 +339,7 @@ prípady:
         než má $l$. Poradie BVS bude taktiež platné, pretože vrcholy v oboch
         stromoch ktoré zlúčime do pravého syna $l$ majú väčšie kľúče než $l$.
 
-    \item Priorita $l$ je väčšian než priorita $r$. Tento prípad je analogický
+    \item Priorita $l$ je väčšia než priorita $r$. Tento prípad je analogický
         k prvému, koreňom zlúčeného stromu bude $r$, jeho pravý syn zostane
         nezmenený, a za ľavého syna dosadíme výsledok $Merge(l, r.left)$.
 
@@ -361,7 +361,7 @@ haldovú podmienku v strome.
 
 \bigskip
 
-U operácie $Insert$ najprv nainializujeme nový vrchol $x$ s vkladaným kľúčom a
+U operácie $Insert$ najprv nainicializujeme nový vrchol $x$ s vkladaným kľúčom a
 náhodnou prioritou. Následne zostupujeme rekurzívne stromom vždy do ľavého
 alebo právého listu podľa toho, či je vkladaný kľúč menší alebo väčší než kľúč
 vrchola, na ktorom sa nachádzame (ďalej ho označíme ako $v$).
@@ -416,16 +416,160 @@ Reálne ale tento prípad pri rozumnom počte prvkov v strome nastáva zriedkavo
 nemá veľký dopad na rýchlosť operácií. Pri obrovských objemoch ukládaných
 dát je žiadúce zvýšiť rozsah premennej určujúcej prioritu na 64 bitov.
 
+Je tiež vhodné dodať, že pamäťová zložitosť Treapu je bez ohľadu na použitý
+dátový typ pre prioritu $\mathcal{O}(n)$ -- každý prvok je reprezentovaný
+jedným vrcholom, a ten uchováva konštatné množstvo informácií: ľavého a pravého
+syna, kľúč a prioritu.
+
 \section{Implicit Treap}
 
 Implicit Treap (ďalej len IT) je dátová štruktúra využívajúca myšlienku
-Treapu k realizácií štruktúry, ktorá pripomína dynamické pole s možnosťou
-rýchleho vkladania a mazania na ľubovoľnej pozícií. 
+náhodných priorít v Treape k realizácií ADT, ktorý reprezentuje dynamické pole
+s možnosťou rýchleho vkladania a mazania na ľubovoľnej pozícií (v podstate to
+isté, čo vykonávajú bez vyvažovania už spomínané kartézske stromy). Z hľadiska
+metód a ich zložitostí je podobná štruktúre Rope \cite{rope}, ktorá
+používa odlišný spôsob vyvažovania stromu \footnote{Presné merania v rámci
+tejto práce neuvádzame, ale na klasických úlohách ako napríklad
+\href{https://uva.onlinejudge.org/index.php?option=com_onlinejudge&Itemid=8&page=show_problem&problem=1850}
+{\emph{UVA 10909 - Lucky Numbers}} dosahoval IT zhruba o tretinu lepšie časy
+než Rope implementovaný v SGI rozšírení STL.}.
+
+Naša implementácia sa opiera o špecifikáciu určenú pre kompetitívne
+programovanie \cite{emaxx}, so zameraním na základnú funkcionalitu ktorú
+poskytuje Rope. Ďalšie možné rozšírenia zahŕňajú intervalové dotazy a
+modifikácie (s veľmi podobnou logikou ako v intervalových stromoch), množinové
+operácie (prienik, zjednotenie), obracanie poradia prvkov na ľubovoľnom rozsahu
+a mnoho ďalších.
+
+\subsection{Princíp a operácie}
+IT je v princípe Treap, ktorý reprezentuje pole o $n$ prvkoch tak, že
+originálne pole je možné dostať pomocou in-order priechodu daného stromu. Tento
+koncept v kombinácií s vyvažovaním podľa logiky Treapu umožňuje vykonávať
+rýchly (priemerne logaritmický) náhodný prístup k ľubovoľnému prvku.
+
+Vďaka tomu, že takto zoradený strom zodpovedá BVS s indexmi v poli ako kľúčmi
+vrcholov, ponúka sa jednoduchá myšlienka realizovať tak aj našu štruktúru. Keby
+sme ale indexy ukladali do vrcholov explicitne, znemožnilo by to rýchle náhodné
+vkladanie alebo mazanie, nakoľko bolo pri každej operácií potrebné prečíslovať
+až $\mathcal{O}(n)$ indexov.
+
+Hlavným princípom IT je tým pádom ukladať indexy len \emph{implicitne}, čo v
+tomto prípade znamená, že ich budeme počítať z veľkostí podstromov.
+Udržiavať počet vrcholov v podstrome každého prvku nie je problematické,
+nakoľko pri každej modifikácií stačí zmenu počtu prvkov propagovať do všetkých
+predkov ovplyvneného vrchola (ktorých je v Treape priemerne $\mathcal{O}(\log
+n)$).
+
+Pamäťová zložitosť IT bude rovnako ako u Treapu $\mathcal{O}(n)$, každý prvok v
+poli bude zastúpený jedným vrcholom a ten v sebe uchováva konštatný počet
+premenných: ľavého a pravého syna, hodnotu, prioritu a po novom veľkosť
+podstromu.
+
+Poďme sa detailne pozrieť na podporované operácie:
+
+\begin{itemize}
+    \item $Insert(x, p)$ -- Pridá do poľa prvok s hodnotou $x$ na pozícií $p$
+        (všetkým prvkom na pozíciach $p, p+1, \ldots, n-1$ v pôvodnom poli sa
+        zvýši index o 1).
+    \item $Delete(p)$ -- Zmaže prvok na pozícií $p$ z poľa (všetkým prvkom na
+        pozíciach $p+1, \ldots, n-1$ v pôvodnom poli sa zníži index o 1).
+    \item $At(p)$ -- Vráti hodnotu prvku na pozícií $p$.
+\end{itemize}
+
+Ako pri Treape, aj v tomto prípade si pomôžeme primitívnymi operáciami $Split$
+a $Merge$, ktorých funkčnosť bude mierne modifikovaná:
+
+\begin{itemize}
+    \item $Split(p, t)$ -- Rozdelí pole špecifikované IT $t$
+        s indexmi $0, \ldots, n-1$ na dva IT $l$ a $r$, reprezentujúce polia
+        $t[0, \ldots, p]$ a $ t[p+1, \ldots, n-1]$. Pôvodný IT $t$ zanikne.
+    \item $Merge(l, r)$ -- Spojí dva IT $l$ a $r$ do jedného tak, že pole
+        reprezentované výsledným IT bude zodpovedať konkatenácií polí z $l$ a
+        $r$.
+\end{itemize}
+
+\subsubsection{Realizácia $Split$ a $Merge$}
+
+$Split(p, t)$ je možné implementovať veľmi podobne ako u normálneho Treapu --
+hlavnou zmenou je, že miesto porovnávania kľúčov si $Split$ bude voliť či sa
+zanorí doľava alebo doprava podľa súčasnej pozície.
+
+Výpočet pozície, na ktorej sa v strome nachádzame je možné vyjadriť ako
+$$
+pos(v) = size(v.left) + \sum_{x \in ar(v)} size(x.left)
+$$
+kde pre vrchol $v$ je $size(v)$ veľkosť podstromu s koreňom vo $v$ a $ar(v)$ je
+množina takých predkov $v$, že $v$ leží v ich pravom podstrome.
+
+Počet vrcholov je v ľavom podstrome priamo uložený, a v ľavých podstromoch
+predkov ho môžeme napočítavať počas rekurzívneho zostupu a posielať nižšie cez
+argument. Logika delenia je potom podľa podmienky $pos > p$ úplne rovnaká ako
+pri $Split$e v Treape. Po vykonaní rozdelenia je ešte potrebné na vrchole
+ktorému sme menili synov (koreň ľavého alebo pravého výsledku delenia)
+prepočítať veľkosť jeho podstromu.
+
+\bigskip
+
+$Merge$ je k verzií z Treapu ešte podobnejší, jediná zmena sa týka
+prepočítavania veľkosti podstromu, ktorú je nutné vykonať na vzniknutom koreni
+nového stromu (po zavolaní rekurzívnych volaní $Merge$ ju stačí spočítať ako
+súčet veľkosti ľavého a pravého podstromu plus 1).
+
+\bigskip
+
+Analýza časovej zložitosti oboch metód je úplne zhodná s tou v Treape, všetky
+pridané kroky sú konštantné.
+
+\subsubsection{Realizácia $Insert$, $Delete$ a $At$}
+
+Narozdiel od neimplicitného Treapu vkladanie a mazanie v IT samo o sebe
+neprechádza strom, a dá sa napísať čisto pomocou primitívnych operácií. V
+nasledujúcich popisoch predpokladáme, že sú funkcie zavolané na IT $t$
+obsahujúci prvky s indexami $0, 1, \ldots, n-1$.
+
+\bigskip
+
+Pri volaní $Insert(x, p)$ môžeme najprv rozpojiť pole na dve časti v rozsahoch
+$0, \ldots, p-1$ a $p, \ldots, n-1$ pomocou $Split$u. Do takto jednej z týchto
+častí stromov je ľahké pripojiť vrchol obsahujúci hodnotu $x$, napríklad
+volaním $lx = Merge(l, x)$, kde $l$ je ľavá rozdelená časť pôvodného poľa.
+Následne už stačí len znovu spojiť oba stromy pomocou $Merge(lx, r)$ a
+dostaneme nové pole s rozsahom $0, \ldots, n$ s prvkom $x$ na pozícií $p$.
+
+Časová zložitosť pozostáva z konštantného počtu volaní $Split$ a $Merge$, ktoré
+v priemernom prípade majú zložitosť $\mathcal{O}(\log n)$.
+
+\bigskip
+
+$Delete$ sa dá implementovať obdobne, opäť môžeme rozpojiť originálne pole
+pomocou $Split(p-1, t)$ na časti $l$ a $r$. Následne ale chceme zmazať prvok na
+originálnej pozícií $p$, ktorý sa teraz nachádza na pozícií 0 v $r$. Môžeme
+teda znova deliť $r$ pomocou $Split(0, r)$ a oddeliť tak samostatný vrchol
+ktorý chceme mazať. Časť $l$ sa potom dá naspäť zlúčiť so zvyškom $r$ a vznikne
+pole s rozsahom $0, \ldots, n-2$, v ktorom chýba $p$-tý prvok.
+
+Analýza časovej zložitosti je analogická ako u $Insert$u.
+
+\bigskip
+
+Nakoniec, $At$ je opäť možné realizovať rekurzívnym zostupom podobným ako u
+BVS, akurát sa po strome pohybujeme na základe pozície, ktorú môžeme počítať
+rovnako ako v metóde $Split$.
+
+\section{Poznámky}
+
+Priložená implementácia je napísaná v jazyku C++, v podobe header-only knižnice
+pod menom \texttt{treap.hpp}. Všetky implementované metódy sú testované v
+programe \texttt{tests.cpp}, spustenie testov je možné príkazom \texttt{make
+test} (vyžaduje program GNU Make).
+
+Kódy implementácie a tohto dokumentu je tiež možné stiahnúť z repozitára na
+adrese \url{https://github.com/PMitura/implitreaps}.
 
 \begin{thebibliography}{9}
 \bibitem{cartesian}
     J. Vuillemin, \uv{A unifying look at data structures}, Communications of
-        the ACM, vol. 23, no. 4. Association for Computing Machinery (ACM), pp.
+        the ACM, vol. 23, no. 4. Association for Computing Machinery (ACM), s.
         229–239, 1. apríla 1980.
 \bibitem{treaps} 
     C. R. Aragon a R. G. Seidel, \uv{Randomized search trees}, 30th Annual
@@ -435,5 +579,12 @@ rýchleho vkladania a mazania na ľubovoľnej pozícií.
         z:
         \url{http://jeffe.cs.illinois.edu/teaching/algorithms/notes/10-treaps.pdf}.
         [prístup 9. mája 2017].
+\bibitem{rope}
+    H.-J. Boehm, R. Atkinson, a M. Plass, “Ropes: An alternative to strings”,
+        Software: Practice and Experience, roč. 25, č. 12. Wiley-Blackwell, s.
+        1315–1330, december 1995.
+\bibitem{emaxx}
+    e-maxx.ru, "Treap (treap, deramida)", 2008. [Online]. Dostupné z:
+        \url{http://e-maxx.ru/algo/treap}. [prístup 13. mája 2017].
 \end{thebibliography}
 \end{document}
