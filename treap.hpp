@@ -186,23 +186,6 @@ class ImplicitTreap {
             return atRec(tree, pos);
         }
 
-        void preOrder(Node n, int ind) {
-            if (!n) return;
-            for(int i = 0; i < ind; i++) cout << "  ";
-            cout << "START " << n->key << endl;
-            for(int i = 0; i < ind; i++) cout << "  ";
-            cout << "subsize: " << n->subSize << endl;
-            preOrder(n->left, ind+2);
-            preOrder(n->right, ind+2);
-            for(int i = 0; i < ind; i++) cout << "  ";
-            cout << "END " << n->key << endl;
-        }
-
-        void print() {
-            cout << endl << endl;
-            preOrder(tree, 0);
-            cout << endl << endl;
-        }
         int depth() {
             return depthRec(tree);
         }
