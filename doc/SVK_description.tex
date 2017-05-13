@@ -92,8 +92,8 @@
 
 \title{\textsc{\large{Semestrálny projekt z MI-PAL, LS 2016/17}}\\
 \vspace{1cm}
-\large{Implementácia dátovej štruktúry}\\
-\Huge{Implicit Treap}\\
+\large{Implementácia dátových štruktúr}\\
+\Huge{Treap a Implicit Treap}\\
 \vspace{1cm}
 \normalsize{Peter Mitura (\texttt{miturpet@fit.cvut.cz})}}
 
@@ -120,12 +120,12 @@ rozloženia nad dostatočne veľkým rozsahom, strom získa z hľadiska efektivi
 operácií nad kľúčmi zaujímavé vlastnosti.
 
 Treap v tejto podobe bol po prvý krát popísaný Aragonom a Seidlom v roku 1989
-\cite{treaps}, s určitými rozdielmi v názvosloví.
+\cite{treaps}, s určitými rozdielmi v názvosloví
 \footnote{Aragon a Seidel
 pri pojme \emph{Treap} nešpecifikovali spôsob voľby priority, náhodnú hodnotu
 jej dávali až v štruktúre ktorú pomenovali \emph{Randomized Search Tree} --
 tento pojem sa ale neskôr začal využívať pre zložitejšiu dátovú štruktúru a
-označenie Treap sa zaužíval pre verziu s náhodnou voľbou priority.}
+označenie Treap sa zaužíval pre verziu s náhodnou voľbou priority.}.
 Základné operácie, podporované touto štruktúrou zodpovedajú, ako už bolo
 zmienené, abstraktnému dátovému typu množina:
 
@@ -276,14 +276,19 @@ $Split$ a $Merge$:
         Treapy: ľavý Treap $l$, v ktorom sú kľúče všetkých vrcholov menšie
         rovné hodnote $x$ a pravý Treap $r$, v ktorom sú kľúče všetkých
         vrcholov väčšie než $x$.  Originálny Treap $ŧ$ v tomto procese zanikne.
-    \item $Merge(l, r)$ -- spojí dva Treapy do jedného, pod podmienkou že
-        maximálny kľúč z $l$ je menší ako minimálny kľúč z $r$.
+    \item $Merge(l, r)$ -- spojí dva Treapy $l$ a $r$ do jedného, pod
+        podmienkou že maximálny kľúč z $l$ je menší ako minimálny kľúč z $r$.
+        Oba originálne Treapy zaniknú a sú nahradené novým spojeným stromom.
 \end{itemize}
+
+Pre potreby práce so stromom označíme ľavého syna vrchola $v$ ako $v.left$ a
+pravého ako $v.right$. K Treapu bežne pristupujeme skrz jeho koreňový vrchol,
+ak teda niekedy dostaneme ako argument funkcie Treap $t$, budeme sa ako na $t$
+zároveň odkazovať na jeho koreň (čo je zhodné so sémantikou implementácie).
 
 \subsubsection{Realizácia operácie $Split$}
 
-Pre potreby práce so stromom označíme ľavého syna vrchola $v$ ako $v.left$ a
-pravého ako $v.right$. Operácia $Split(x, t)$ môže potom naraziť na 3 prípady:
+Operácia $Split(x, t)$ môže naraziť na celkom 3 prípady:
 \begin{itemize}
     \item Ak je $x$ menšie ako kľúč v $t$, tak ako $r$ vrátime vrchol $t$ s
         jeho pôvodným pravým podstromom, a ako ľavý podstrom mu priradíme pravý
@@ -316,7 +321,106 @@ dáva asymptoticky $O(\log n)$.
 
 \subsubsection{Realizácia operácie $Merge$}
 
+Podmienka kladená na kľúče pri spájaní dvoch Treapov robí udržanie BST poradia
+stromu pomerne jednoduché, jediné o čo sa musíme starať je zachovanie haldovej
+podmienky v prioritách. Pri zavolaní funkcie $Merge(l, r)$ opäť môžu nastať tri
+prípady:
 
+\begin{itemize}
+    \item Priorita $l$ je menšia než priorita $r$. V tom prípade
+        chceme zlúčený Treap zakoreniť vo vrchole $l$, a ľavého syna $l$
+        môžeme ponechať tak ako je (spĺňa všetky podmienky a žiadne vrcholy z
+        $r$ do neho pridávať nemôžeme). Pravého syna koreňa nového stromu
+        postavíme rekurzívne, zlúčením pôvodného pravého syna $l$ a
+        stromu $r$, pomocou operácie $Merge(l.right, r)$. 
+
+        Môžeme si povšimnúť že podmienka minimovej haldy bude zachovaná, lebo v
+        stromoch $r$ aj $l.right$ sa nachádzajú len vrcholy s väčšou prioritou
+        než má $l$. Poradie BVS bude taktiež platné, pretože vrcholy v oboch
+        stromoch ktoré zlúčime do pravého syna $l$ majú väčšie kľúče než $l$.
+
+    \item Priorita $l$ je väčšian než priorita $r$. Tento prípad je analogický
+        k prvému, koreňom zlúčeného stromu bude $r$, jeho pravý syn zostane
+        nezmenený, a za ľavého syna dosadíme výsledok $Merge(l, r.left)$.
+
+    \item Treap $l$ alebo $r$ je prázdny, prípadne sú prázdne oba
+        (nastane
+        napr. po zavolaní $Merge$ na neexistujúceho syna). Vtedy vrátime ten
+        Treap, ktorý nie je prázdny, prípadne prázdny Treap ak sú prázdne oba.
+\end{itemize}
+
+Podobne ako u $Split$u môžeme konštatovať, že $Merge$ má lineárnu časovú
+zložitosť vzhľadom k hĺbke stromu, čo je v priemernom prípade $\mathcal{O}(\log
+n)$.
+
+\subsubsection{Realizácia operácií $Insert$, $Delete$ a $Find$}
+
+Všetky tri operácie implentujeme podobným spôsobom ako v nevyvažovanom BVS,
+musíme si ale pomôcť vyššie uvedenými primitívnymi funkciami aby sme zachovali
+haldovú podmienku v strome.
+
+\bigskip
+
+U operácie $Insert$ najprv nainializujeme nový vrchol $x$ s vkladaným kľúčom a
+náhodnou prioritou. Následne zostupujeme rekurzívne stromom vždy do ľavého
+alebo právého listu podľa toho, či je vkladaný kľúč menší alebo väčší než kľúč
+vrchola, na ktorom sa nachádzame (ďalej ho označíme ako $v$).
+
+Zostup zastavíme v momente, keď je priorita nového vrchola menšia, než priorita
+$v$. Vtedy je z hľadiska haldovej podmienky vhodné umiestniť nový prvok na
+aktuálnu pozíciu, rozdelíme teda podstrom s koreňom $v$ pomocou operácie
+$Split(x.key, v)$, čím získame dva stromy $l$ a $r$. Všetky vrcholy týchto
+stromov majú vyššiu prioritu než $x$ a menší resp. väčší kľuč ako $x$. Môžeme
+teda vložiť $x$ na miesto kde sa v strome nachádzal vrchol $v$ a ako jeho
+ľavého resp. pravého syna použiť stromy $l$ a $r$.
+
+Ak náhodou prídeme zostupom do neexistujúceho vrchola, vložíme $x$ na jeho
+miesto.
+
+Z hľadiska časovej zložitosti sa opäť opakovane zanorujeme do hlbších vrcholov
+do momentu, kým nevložíme prvok a nezavoláme $Split$. Zložitosť $Splitu$ aj
+zostupu je v priemernom prípade $\mathcal{O}(\log n)$.
+
+\bigskip
+
+Operácia $Delete$ taktiež rekurzívne zostupuje stromom, a podobne ako v
+normálnom BVS hľadá pozíciu mazaného vrchola $x$. Keď je tento vrchol nájdený, po
+jeho zmazaní ho nemôžeme len nahradiť jedným z jeho potomkov, nakoľko by bola
+porušená haldová podmienka. Môžeme ale využiť operáciu
+$Merge(x.left, x.right)$ (všetky podmienky pre $Merge$ sú splnené) a výsledný
+strom umiestniť na pôvodnú pozíciu $x$ (ktorý následne je zmazaný).
+
+Zostup aj $Merge$ majú opäť v priemernom prípade časovú zložitosť
+$\mathcal{O}(\log n)$.
+
+\bigskip
+
+Nakoniec, $Find$ je nad kľúčmi možné implementovať úplne zhodne ako v
+nevyvažovanom BVS.
+
+\subsection{Implementačné detaily}
+
+Teoreticky sme ukázali, ako realizovať Treap s funkcionalitou vyvažovaného BVS
+pri časovej zložitosti všetkých operácií $\mathcal{O}(\log n)$ v priemernom
+prípade ($\mathcal{O}(n)$ v najhoršom).
+
+Reálna implementácia sa mierne rozchádza s teóriou v priraďovaní
+náhodných priorít, u ktorých sa rátalo s rovnomerným rozložením v nejakom
+spojitom rozsahu (napríklad $[0, 1]$). V praxi sú ale spojité náhodné veličiny
+problematické, a preto sú miesto nich v implementácií použité celé čísla
+reprezentované pomocou 32 bitov, ktoré je jednoduché pseudonáhodne generovať.
+
+To samozrejme komplikuje dokazovanie vety 1, nakoľko môže s nenulovou
+pravdepodobnosťou nastať situácia, kedy budú vygenerované dve rovnaké priority.
+Reálne ale tento prípad pri rozumnom počte prvkov v strome nastáva zriedkavo a
+nemá veľký dopad na rýchlosť operácií. Pri obrovských objemoch ukládaných
+dát je žiadúce zvýšiť rozsah premennej určujúcej prioritu na 64 bitov.
+
+\section{Implicit Treap}
+
+Implicit Treap (ďalej len IT) je dátová štruktúra využívajúca myšlienku
+Treapu k realizácií štruktúry, ktorá pripomína dynamické pole s možnosťou
+rýchleho vkladania a mazania na ľubovoľnej pozícií. 
 
 \begin{thebibliography}{9}
 \bibitem{cartesian}
